@@ -1,0 +1,12 @@
+name = "linkedin-currency-converter"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+
+[dev]
+port = 8787
+
+# Import CSV files as text modules
+[[rules]]
+type = "Text"
+globs = ["**/*.csv"]
+fallthrough = true
