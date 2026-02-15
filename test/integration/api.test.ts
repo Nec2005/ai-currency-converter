@@ -106,6 +106,8 @@ describe("Currency Converter API Integration Tests", () => {
       expect(data.amount).toBe(100);
       expect(typeof data.convertedAmount).toBe("number");
       expect(typeof data.rate).toBe("number");
+      expect(typeof data.totalCurrencies).toBe("number");
+      expect(data.totalCurrencies).toBeGreaterThan(0);
     });
 
     it("returns error for invalid amount", async () => {

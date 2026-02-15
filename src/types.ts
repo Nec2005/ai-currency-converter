@@ -24,6 +24,7 @@ export interface ConversionResponse {
   convertedAmount: number;
   rate: number;
   effectiveDate: string;
+  totalCurrencies: number;
 }
 
 export interface ApiError {

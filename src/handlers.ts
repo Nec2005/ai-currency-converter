@@ -170,6 +170,7 @@ export function handleConvert(
     convertedAmount: Math.round(convertedAmount * 100) / 100, // 2 decimal precision
     rate: Math.round(rate * 1000000) / 1000000, // 6 decimal precision
     effectiveDate,
+    totalCurrencies: rates.size,
   };
 
   return jsonResponse(response);
