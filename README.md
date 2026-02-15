@@ -77,23 +77,3 @@ npm run test:watch
 ```bash
 npm run deploy
 ```
-
-## Preview Deployments
-
-Pull requests automatically get a preview worker deployed after tests pass. The preview URL is posted as a comment on the PR.
-
-Preview workers are named `currency-converter-pr-{PR_NUMBER}` and are automatically deleted when the PR is closed.
-
-### Manual Cleanup
-
-To manually delete a preview worker:
-
-```bash
-npx wrangler delete --name currency-converter-pr-{PR_NUMBER}
-```
-
-To list all deployed workers:
-
-```bash
-npx wrangler deployments list
-```
