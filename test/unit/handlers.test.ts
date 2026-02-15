@@ -92,6 +92,7 @@ describe("handleConvert", () => {
     expect(data.amount).toBe(100);
     expect(data.convertedAmount).toBe(85.1);
     expect(data.rate).toBe(0.851);
+    expect(data.totalCurrencies).toBe(4);
   });
 
   it("returns error for invalid amount", async () => {
