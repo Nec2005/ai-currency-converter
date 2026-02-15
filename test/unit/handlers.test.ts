@@ -6,6 +6,7 @@ import {
   handleConvert,
   handleGetAllRates,
   handleGetCurrencyDetail,
+  handleBatchConvert,
 } from "../../src/handlers";
 import { ExchangeRateData } from "../../src/types";
 
@@ -167,6 +168,114 @@ describe("handleGetCurrencyDetail", () => {
 
   it("returns error for invalid currency", async () => {
     const response = handleGetCurrencyDetail("XYZ", mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe("INVALID_CURRENCY");
+  });
+});
+
+describe("handleBatchConvert", () => {
+  it("converts multiple amounts correctly", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "USD",
+        to: "EUR",
+        amounts: [100, 250, 500],
+      }),
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.from).toBe("USD");
+    expect(data.to).toBe("EUR");
+    expect(data.conversions).toHaveLength(3);
+    expect(data.conversions[0].amount).toBe(100);
+    expect(data.conversions[0].convertedAmount).toBe(85.1);
+    expect(data.conversions[1].amount).toBe(250);
+    expect(data.conversions[2].amount).toBe(500);
+  });
+
+  it("returns error for invalid JSON body", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "invalid json",
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe("MISSING_PARAMETER");
+  });
+
+  it("returns error for missing parameters", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "USD" }),
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe("MISSING_PARAMETER");
+  });
+
+  it("returns error for empty amounts array", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "USD",
+        to: "EUR",
+        amounts: [],
+      }),
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe("INVALID_AMOUNT");
+  });
+
+  it("returns error for invalid amounts in array", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "USD",
+        to: "EUR",
+        amounts: [100, "invalid", 300],
+      }),
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe("INVALID_AMOUNT");
+  });
+
+  it("returns error for invalid currency", async () => {
+    const request = new Request("http://localhost/convert/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "USD",
+        to: "XYZ",
+        amounts: [100],
+      }),
+    });
+
+    const response = await handleBatchConvert(request, mockRates);
     const data = await response.json();
 
     expect(response.status).toBe(400);
