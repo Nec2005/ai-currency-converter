@@ -1,4 +1,4 @@
-name: Tests
+name: Tests & Deploy
 
 on:
   push:
@@ -25,3 +25,59 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Cloudflare Workers
+        id: deploy
+        run: |
+          OUTPUT=$(npx wrangler deploy)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev')
+          echo "worker_url=$URL" >> $GITHUB_OUTPUT
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Smoke Tests
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          echo "Testing deployed worker at: $URL"
+
+          echo "Testing health endpoint..."
+          HEALTH=$(curl -s "$URL/")
+          echo "$HEALTH" | grep -q '"status":"ok"' || (echo "Health check failed" && exit 1)
+          echo "✓ Health check passed"
+
+          echo "Testing currencies endpoint..."
+          CURRENCIES=$(curl -s "$URL/currencies")
+          echo "$CURRENCIES" | grep -q '"currencies"' || (echo "Currencies endpoint failed" && exit 1)
+          echo "✓ Currencies endpoint passed"
+
+          echo "Testing rate endpoint..."
+          RATE=$(curl -s "$URL/rate?from=USD&to=EUR")
+          echo "$RATE" | grep -q '"rate"' || (echo "Rate endpoint failed" && exit 1)
+          echo "✓ Rate endpoint passed"
+
+          echo "Testing convert endpoint..."
+          CONVERT=$(curl -s "$URL/convert?from=USD&to=EUR&amount=100")
+          echo "$CONVERT" | grep -q '"convertedAmount"' || (echo "Convert endpoint failed" && exit 1)
+          echo "✓ Convert endpoint passed"
+
+          echo "All smoke tests passed!"
