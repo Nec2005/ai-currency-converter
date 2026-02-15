@@ -192,23 +192,26 @@ export function handleGetAllRates(
   }
 
   const baseRate = rates.get(base)!;
-  const allRates: Record<string, number> = {};
+  const rateEntries: [string, number][] = [];
   let latestDate = baseRate.effectiveDate;
 
   for (const [code, data] of rates) {
     // Calculate rate relative to base currency
     const rate = data.rate / baseRate.rate;
-    allRates[code] = Math.round(rate * 1000000) / 1000000;
+    rateEntries.push([code, Math.round(rate * 1000000) / 1000000]);
 
     if (data.effectiveDate > latestDate) {
       latestDate = data.effectiveDate;
     }
   }
 
+  // Sort rates from highest to lowest
+  rateEntries.sort((a, b) => b[1] - a[1]);
+
   const response: RatesResponse = {
     base,
     effectiveDate: latestDate,
-    rates: allRates,
+    rates: Object.fromEntries(rateEntries),
   };
 
   return jsonResponse(response);
