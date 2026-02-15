@@ -133,9 +133,78 @@ All error responses follow this format:
 - Cloudflare Workers for production
 - Local development via Wrangler CLI
 
+### 5. Get All Rates
+
+**GET /rates?base={currency}**
+
+Returns all exchange rates relative to a base currency (defaults to USD).
+
+**Query Parameters:**
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| base | No | Base currency code (default: USD) |
+
+**Response:**
+```json
+{
+  "base": "USD",
+  "effectiveDate": "2025-12-31",
+  "rates": {
+    "EUR": 0.92,
+    "GBP": 0.79,
+    "JPY": 157.5
+  }
+}
+```
+
+### 6. Get Currency Detail
+
+**GET /currencies/{code}**
+
+Returns details for a specific currency.
+
+**Response:**
+```json
+{
+  "code": "EUR",
+  "name": "Euro Zone-Euro",
+  "rateToUSD": 0.851,
+  "effectiveDate": "2025-12-31"
+}
+```
+
+### 7. Batch Convert
+
+**POST /convert/batch**
+
+Converts multiple amounts in a single request.
+
+**Request Body:**
+```json
+{
+  "from": "USD",
+  "to": "EUR",
+  "amounts": [100, 250, 500]
+}
+```
+
+**Response:**
+```json
+{
+  "from": "USD",
+  "to": "EUR",
+  "rate": 0.92,
+  "effectiveDate": "2025-12-31",
+  "conversions": [
+    { "amount": 100, "convertedAmount": 92.00 },
+    { "amount": 250, "convertedAmount": 230.00 },
+    { "amount": 500, "convertedAmount": 460.00 }
+  ]
+}
+```
+
 ## Future Enhancements
 
 1. **Historical Rates** - Query rates for specific dates
-2. **Batch Conversion** - Convert multiple amounts in single request
-3. **Rate Change Notifications** - Webhook support for rate changes
-4. **Currency Metadata** - Additional info like symbols, decimal places
+2. **Rate Change Notifications** - Webhook support for rate changes
+3. **Currency Metadata** - Additional info like symbols, decimal places

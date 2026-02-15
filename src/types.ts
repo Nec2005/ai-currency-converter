@@ -39,3 +39,35 @@ export interface HealthResponse {
   status: string;
   message: string;
 }
+
+// New endpoint types
+
+export interface RatesResponse {
+  base: string;
+  effectiveDate: string;
+  rates: Record<string, number>;
+}
+
+export interface CurrencyDetailResponse {
+  code: string;
+  name: string;
+  rateToUSD: number;
+  effectiveDate: string;
+}
+
+export interface BatchConversionRequest {
+  from: string;
+  to: string;
+  amounts: number[];
+}
+
+export interface BatchConversionResponse {
+  from: string;
+  to: string;
+  rate: number;
+  effectiveDate: string;
+  conversions: {
+    amount: number;
+    convertedAmount: number;
+  }[];
+}
