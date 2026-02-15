@@ -1,5 +1,7 @@
 # Currency Converter API
 
+[![Tests](https://github.com/Nec2005/ai-currency-converter/actions/workflows/test.yml/badge.svg)](https://github.com/Nec2005/ai-currency-converter/actions/workflows/test.yml)
+
 A REST API for currency conversion built with TypeScript and Cloudflare Workers.
 
 ## Local Development
@@ -58,6 +60,16 @@ GET http://localhost:8787/convert?from=USD&to=EUR&amount=100
 curl -X POST http://localhost:8787/convert/batch \
   -H "Content-Type: application/json" \
   -d '{"from": "USD", "to": "EUR", "amounts": [100, 250, 500]}'
+```
+
+## Testing
+
+```bash
+# Run tests once
+npm test
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
 ## Deployment
