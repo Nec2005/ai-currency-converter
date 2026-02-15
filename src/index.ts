@@ -4,6 +4,9 @@ import {
   handleListCurrencies,
   handleGetRate,
   handleConvert,
+  handleGetAllRates,
+  handleGetCurrencyDetail,
+  handleBatchConvert,
   errorResponse,
 } from "./handlers";
 import csvData from "../data/exchange_rates_with_iso.csv";
@@ -25,13 +28,26 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
+    const { rates } = getRates();
 
-    // Only handle GET requests
+    // Handle POST requests
+    if (request.method === "POST") {
+      if (url.pathname === "/convert/batch") {
+        return handleBatchConvert(request, rates);
+      }
+      return errorResponse("Method not allowed", "NOT_FOUND", 405);
+    }
+
+    // Handle GET requests
     if (request.method !== "GET") {
       return errorResponse("Method not allowed", "NOT_FOUND", 405);
     }
 
-    const { rates } = getRates();
+    // Check for /currencies/{code} pattern
+    const currencyMatch = url.pathname.match(/^\/currencies\/([A-Za-z]{3})$/);
+    if (currencyMatch) {
+      return handleGetCurrencyDetail(currencyMatch[1], rates);
+    }
 
     switch (url.pathname) {
       case "/":
@@ -39,6 +55,9 @@ export default {
 
       case "/currencies":
         return handleListCurrencies(rates);
+
+      case "/rates":
+        return handleGetAllRates(url, rates);
 
       case "/rate":
         return handleGetRate(url, rates);

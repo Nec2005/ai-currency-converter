@@ -5,6 +5,9 @@ import {
   HealthResponse,
   RateResponse,
   ExchangeRateData,
+  RatesResponse,
+  CurrencyDetailResponse,
+  BatchConversionResponse,
 } from "./types";
 import { isValidCode, getNameFromCode } from "./currencyMapping";
 
@@ -167,6 +170,160 @@ export function handleConvert(
     convertedAmount: Math.round(convertedAmount * 100) / 100, // 2 decimal precision
     rate: Math.round(rate * 1000000) / 1000000, // 6 decimal precision
     effectiveDate,
+  };
+
+  return jsonResponse(response);
+}
+
+export function handleGetAllRates(
+  url: URL,
+  rates: Map<string, ExchangeRateData>
+): Response {
+  const base = url.searchParams.get("base")?.toUpperCase() || "USD";
+
+  // Validate base currency
+  if (!isValidCode(base) || !rates.has(base)) {
+    return errorResponse(
+      `Invalid base currency code: ${base}`,
+      "INVALID_CURRENCY",
+      400
+    );
+  }
+
+  const baseRate = rates.get(base)!;
+  const allRates: Record<string, number> = {};
+  let latestDate = baseRate.effectiveDate;
+
+  for (const [code, data] of rates) {
+    // Calculate rate relative to base currency
+    const rate = data.rate / baseRate.rate;
+    allRates[code] = Math.round(rate * 1000000) / 1000000;
+
+    if (data.effectiveDate > latestDate) {
+      latestDate = data.effectiveDate;
+    }
+  }
+
+  const response: RatesResponse = {
+    base,
+    effectiveDate: latestDate,
+    rates: allRates,
+  };
+
+  return jsonResponse(response);
+}
+
+export function handleGetCurrencyDetail(
+  code: string,
+  rates: Map<string, ExchangeRateData>
+): Response {
+  const upperCode = code.toUpperCase();
+
+  if (!isValidCode(upperCode) || !rates.has(upperCode)) {
+    return errorResponse(
+      `Invalid currency code: ${upperCode}`,
+      "INVALID_CURRENCY",
+      400
+    );
+  }
+
+  const data = rates.get(upperCode)!;
+
+  const response: CurrencyDetailResponse = {
+    code: data.code,
+    name: data.name,
+    rateToUSD: data.rate,
+    effectiveDate: data.effectiveDate,
+  };
+
+  return jsonResponse(response);
+}
+
+export async function handleBatchConvert(
+  request: Request,
+  rates: Map<string, ExchangeRateData>
+): Promise<Response> {
+  // Parse JSON body
+  let body: { from?: string; to?: string; amounts?: number[] };
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse(
+      "Invalid JSON body",
+      "MISSING_PARAMETER",
+      400
+    );
+  }
+
+  const from = body.from?.toUpperCase();
+  const to = body.to?.toUpperCase();
+  const amounts = body.amounts;
+
+  // Validate required parameters
+  if (!from || !to || !amounts) {
+    return errorResponse(
+      "Missing required parameters: from, to, and amounts",
+      "MISSING_PARAMETER",
+      400
+    );
+  }
+
+  // Validate amounts is an array
+  if (!Array.isArray(amounts) || amounts.length === 0) {
+    return errorResponse(
+      "amounts must be a non-empty array of numbers",
+      "INVALID_AMOUNT",
+      400
+    );
+  }
+
+  // Validate all amounts are numbers
+  for (const amt of amounts) {
+    if (typeof amt !== "number" || isNaN(amt)) {
+      return errorResponse(
+        "All amounts must be valid numbers",
+        "INVALID_AMOUNT",
+        400
+      );
+    }
+  }
+
+  // Validate currency codes
+  if (!isValidCode(from) || !rates.has(from)) {
+    return errorResponse(
+      `Invalid currency code: ${from}`,
+      "INVALID_CURRENCY",
+      400
+    );
+  }
+  if (!isValidCode(to) || !rates.has(to)) {
+    return errorResponse(
+      `Invalid currency code: ${to}`,
+      "INVALID_CURRENCY",
+      400
+    );
+  }
+
+  const fromRate = rates.get(from)!;
+  const toRate = rates.get(to)!;
+  const rate = toRate.rate / fromRate.rate;
+
+  const effectiveDate =
+    fromRate.effectiveDate > toRate.effectiveDate
+      ? fromRate.effectiveDate
+      : toRate.effectiveDate;
+
+  const conversions = amounts.map((amount) => ({
+    amount,
+    convertedAmount: Math.round(amount * rate * 100) / 100,
+  }));
+
+  const response: BatchConversionResponse = {
+    from,
+    to,
+    rate: Math.round(rate * 1000000) / 1000000,
+    effectiveDate,
+    conversions,
   };
 
   return jsonResponse(response);
